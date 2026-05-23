@@ -188,9 +188,8 @@ async function handleApi(_, res, url) {
       categories: categories.map(id => ({ id, label: CATEGORY_LABELS[id] || humanizeId(id) })),
       totalTopLevel,
       featuredLeaderboards: [
-        leaderboard(players, 'Play time', 'minecraft:custom', 'minecraft:play_time'),
-        leaderboard(players, 'Deaths', 'minecraft:custom', 'minecraft:deaths'),
         { title: 'Mob kills', category: 'minecraft:killed', stat: null, rows: players.map(p => ({ uuid: p.uuid, name: p.name, value: Object.values(p.stats['minecraft:killed'] || {}).reduce((a, b) => a + b, 0) })).filter(r => r.value > 0).sort((a, b) => b.value - a.value).slice(0, 10).map(r => ({ ...r, displayValue: formatNumber(r.value) })) },
+        leaderboard(players, 'Deaths', 'minecraft:custom', 'minecraft:deaths'),
         leaderboard(players, 'Walked', 'minecraft:custom', 'minecraft:walk_one_cm'),
         leaderboard(players, 'Sprinted', 'minecraft:custom', 'minecraft:sprint_one_cm'),
         leaderboard(players, 'Flown', 'minecraft:custom', 'minecraft:aviate_one_cm'),
