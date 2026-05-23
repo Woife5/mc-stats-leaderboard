@@ -102,11 +102,6 @@ function withDisplayValue(row, stat) {
   return { ...row, displayValue: formatCustomStat(stat, row.value) };
 }
 
-function statSortValue(statId, value) {
-  if (statId.endsWith('_one_cm')) return value;
-  return value;
-}
-
 async function loadData() {
   const files = fs.existsSync(STATS_DIR) ? fs.readdirSync(STATS_DIR).filter(f => f.endsWith('.json')) : [];
   const displayNames = await resolveDisplayNames(files.map(file => path.basename(file, '.json')));
@@ -126,7 +121,7 @@ async function loadData() {
       mob_kills: Object.values(stats['minecraft:killed'] || {}).reduce((a, b) => a + b, 0),
       walk_one_cm: custom['minecraft:walk_one_cm'] || 0,
       sprint_one_cm: custom['minecraft:sprint_one_cm'] || 0,
-      fly_one_cm: custom['minecraft:fly_one_cm'] || 0,
+      aviate_one_cm: custom['minecraft:aviate_one_cm'] || 0,
     };
     return { uuid, name: displayNames[uuid] || uuid, stats, categories, totals, topMetrics };
   });
@@ -165,7 +160,7 @@ function serveStatic(req, res) {
   return true;
 }
 
-async function handleApi(req, res, url) {
+async function handleApi(_, res, url) {
   const { players } = await loadData();
   if (url.pathname === '/api/players') return json(res, 200, {
     players: players.map(p => ({
@@ -178,7 +173,7 @@ async function handleApi(req, res, url) {
         mob_kills: formatNumber(p.topMetrics.mob_kills),
         walk_one_cm: formatCustomStat('minecraft:walk_one_cm', p.topMetrics.walk_one_cm),
         sprint_one_cm: formatCustomStat('minecraft:sprint_one_cm', p.topMetrics.sprint_one_cm),
-        fly_one_cm: formatCustomStat('minecraft:fly_one_cm', p.topMetrics.fly_one_cm),
+        aviate_one_cm: formatCustomStat('minecraft:aviate_one_cm', p.topMetrics.aviate_one_cm),
       },
     })),
   });
@@ -193,12 +188,11 @@ async function handleApi(req, res, url) {
       categories: categories.map(id => ({ id, label: CATEGORY_LABELS[id] || humanizeId(id) })),
       totalTopLevel,
       featuredLeaderboards: [
-        leaderboard(players, 'Play time', 'minecraft:custom', 'minecraft:play_time'),
-        leaderboard(players, 'Deaths', 'minecraft:custom', 'minecraft:deaths'),
         { title: 'Mob kills', category: 'minecraft:killed', stat: null, rows: players.map(p => ({ uuid: p.uuid, name: p.name, value: Object.values(p.stats['minecraft:killed'] || {}).reduce((a, b) => a + b, 0) })).filter(r => r.value > 0).sort((a, b) => b.value - a.value).slice(0, 10).map(r => ({ ...r, displayValue: formatNumber(r.value) })) },
+        leaderboard(players, 'Deaths', 'minecraft:custom', 'minecraft:deaths'),
         leaderboard(players, 'Walked', 'minecraft:custom', 'minecraft:walk_one_cm'),
         leaderboard(players, 'Sprinted', 'minecraft:custom', 'minecraft:sprint_one_cm'),
-        leaderboard(players, 'Flown', 'minecraft:custom', 'minecraft:fly_one_cm'),
+        leaderboard(players, 'Flown', 'minecraft:custom', 'minecraft:aviate_one_cm'),
       ],
     });
   }
