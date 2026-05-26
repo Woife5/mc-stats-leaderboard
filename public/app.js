@@ -42,7 +42,7 @@ const els = {
   loadLeaderboard: document.getElementById('loadLeaderboard'),
 };
 
-const fmt = new Intl.NumberFormat('en-US');
+const fmt = new Intl.NumberFormat('de-AT');
 
 // Mutable app state.
 const state = {
