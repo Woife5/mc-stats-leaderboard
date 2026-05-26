@@ -1,6 +1,6 @@
 {
   "name": "mc-stats-leaderboard",
-  "version": "1.0.0",
+  "version": "0.0.2",
   "private": true,
   "description": "Self-hosted Minecraft stats leaderboard",
   "main": "server.js",
