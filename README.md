@@ -7,7 +7,8 @@ serving the web app and the raw player `UUID.json` files from your Minecraft
 world. All parsing, aggregation, leaderboards and rendering happen in the
 browser.
 
-No third-party APIs, no backend process, no caches.
+No third-party APIs, no backend process, no caches. The `package.json` exists
+only for project metadata, CI versioning, and frontend tooling scripts.
 
 ## How it works
 
@@ -64,8 +65,17 @@ stats still appear on leaderboards with their proper name.
 
 ## Local development
 
-No build step. Serve `public/` with `static-web-server` directly (the directory
-listing must return JSON):
+No build step. The easiest local loop is the Docker-backed npm script:
+
+```bash
+npm run dev
+```
+
+Then open <http://localhost:8080>. The script builds the production image and
+live-mounts `public/` plus the repo-local `stats/` directory.
+
+You can also serve `public/` with `static-web-server` directly, as long as the
+directory listing returns JSON:
 
 ```bash
 # install via Homebrew / cargo / docker
@@ -89,6 +99,10 @@ docker run --rm -p 8080:80 \
 
 The repo's `stats/` directory (gitignored) is for local testing — drop a few
 real `<UUID>.json` files there.
+
+Plain static hosts such as GitHub Pages are not enough by themselves, because
+the app needs `/stats/` to return a JSON directory listing. Use the Docker image
+or configure another static server with equivalent directory-listing behavior.
 
 ## Refresh model
 

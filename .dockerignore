@@ -3,6 +3,9 @@
 .github
 .DS_Store
 node_modules
+npm-debug.log
+stats
+dist
 README.md
 Dockerfile
 .dockerignore
