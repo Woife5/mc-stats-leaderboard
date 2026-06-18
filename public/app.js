@@ -169,6 +169,10 @@ function withDisplay(row, stat) {
   return { ...row, displayValue: formatCustomStat(stat, row.value) };
 }
 
+function sumStats(values, filter = () => true) {
+  return Object.entries(values || {}).reduce((total, [id, value]) => total + (filter(id) ? value : 0), 0);
+}
+
 function topBoard(players, title, category, stat, limit = 10) {
   return {
     title,
@@ -176,7 +180,20 @@ function topBoard(players, title, category, stat, limit = 10) {
   };
 }
 
+function totalBoard(players, title, getValue, limit = 10) {
+  return {
+    title,
+    rows: players
+      .map(p => ({ uuid: p.uuid, name: p.name, value: getValue(p) }))
+      .filter(r => r.value > 0)
+      .sort((a, b) => b.value - a.value)
+      .slice(0, limit)
+      .map(r => ({ ...r, displayValue: formatNumber(r.value) })),
+  };
+}
+
 function buildFeatured(players) {
+  const minedBlockIds = new Set(players.flatMap(p => Object.keys(p.stats?.['minecraft:mined'] || {})));
   const mobKillRows = players
     .map(p => ({ uuid: p.uuid, name: p.name, value: Object.values(p.stats?.['minecraft:killed'] || {}).reduce((a, b) => a + b, 0) }))
     .filter(r => r.value > 0)
@@ -184,10 +201,13 @@ function buildFeatured(players) {
     .slice(0, 10)
     .map(r => ({ ...r, displayValue: formatNumber(r.value) }));
   return [
+    totalBoard(players, 'Blocks broken', p => sumStats(p.stats?.['minecraft:mined'])),
+    totalBoard(players, 'Blocks placed', p => sumStats(p.stats?.['minecraft:used'], id => minedBlockIds.has(id))),
     { title: 'Mob kills', rows: mobKillRows },
     topBoard(players, 'Deaths', 'minecraft:custom', 'minecraft:deaths'),
     topBoard(players, 'Walked', 'minecraft:custom', 'minecraft:walk_one_cm'),
     topBoard(players, 'Sprinted', 'minecraft:custom', 'minecraft:sprint_one_cm'),
+    topBoard(players, 'Distance by boat', 'minecraft:custom', 'minecraft:boat_one_cm'),
     topBoard(players, 'Flown', 'minecraft:custom', 'minecraft:aviate_one_cm'),
     topBoard(players, 'Play time', 'minecraft:custom', 'minecraft:play_time'),
   ];
