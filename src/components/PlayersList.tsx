@@ -1,19 +1,14 @@
 import { useMemo, useState } from 'react';
 import type { Player } from '../types';
 import type { PreviousStatsSnapshot } from '../lib/statSnapshot';
-import { formatCustomStat, formatNumber, formatSnapshotAge } from '../lib/format';
+import { formatCustomStat, formatSnapshotAge } from '../lib/format';
 import { getPreviousStat } from '../lib/statSnapshot';
-import { IncreaseIndicator, Pill } from './Row';
+import StatBubble from './StatBubble';
 
 interface PlayersListProps {
   players: Player[];
   previousSnapshot: PreviousStatsSnapshot | null;
   onSelect: (uuid: string) => void;
-}
-
-function previousMobKills(snapshot: PreviousStatsSnapshot | null, uuid: string): number | undefined {
-  const killed = snapshot?.players[uuid]?.stats['minecraft:killed'];
-  return killed ? Object.values(killed).reduce((a, b) => a + b, 0) : undefined;
 }
 
 export default function PlayersList({ players, previousSnapshot, onSelect }: PlayersListProps) {
@@ -39,20 +34,18 @@ export default function PlayersList({ players, previousSnapshot, onSelect }: Pla
       {matches.length ? (
         matches.map(p => {
           const previousPlayTime = getPreviousStat(previousSnapshot, p.uuid, 'minecraft:custom', 'minecraft:play_time');
-          const previousKills = previousMobKills(previousSnapshot, p.uuid);
           const playTimeIncreased = previousPlayTime !== undefined && p.topMetrics.play_time > previousPlayTime;
-          const killsIncreased = previousKills !== undefined && p.topMetrics.mob_kills > previousKills;
 
           return (
             <button
               key={p.uuid}
               type="button"
               onClick={() => onSelect(p.uuid)}
-              className="w-full text-left flex justify-between gap-3 py-2.5 border-b border-border/55 hover:bg-accent/10 bg-transparent"
+              className="w-full text-left flex justify-between gap-3 cursor-pointer p-2.5 border-b border-border/55 hover:bg-accent/10 bg-transparent"
             >
               <span>{p.name}</span>
               <span className="flex gap-2 items-center whitespace-nowrap">
-                <Pill
+                <StatBubble
                   increase={
                     playTimeIncreased
                       ? {
@@ -64,19 +57,7 @@ export default function PlayersList({ players, previousSnapshot, onSelect }: Pla
                   }
                 >
                   {formatCustomStat('minecraft:play_time', p.topMetrics.play_time)}
-                </Pill>
-                <span className="text-muted">
-                  {formatNumber(p.topMetrics.mob_kills)} kills
-                  {killsIncreased ? (
-                    <IncreaseIndicator
-                      increase={{
-                        previous: `${formatNumber(previousKills)} kills`,
-                        delta: `+${formatNumber(p.topMetrics.mob_kills - previousKills)} kills`,
-                        snapshotAge,
-                      }}
-                    />
-                  ) : null}
-                </span>
+                </StatBubble>
               </span>
             </button>
           );
