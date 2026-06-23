@@ -5,6 +5,7 @@ import Leaderboard from './components/Leaderboard';
 import PlayerDetail from './components/PlayerDetail';
 import PlayersList from './components/PlayersList';
 import { useStats } from './hooks/useStats';
+import { loadPreviousStatsSnapshot, saveStatsSnapshot } from './lib/statSnapshot';
 import type { Player } from './types';
 
 export default function App() {
@@ -14,6 +15,10 @@ export default function App() {
   const [stat, setStat] = useState('');
   const [reloadKey, setReloadKey] = useState(0);
   const [selectedUuid, setSelectedUuid] = useState<string | null>(null);
+  const [previousSnapshot] = useState(loadPreviousStatsSnapshot);
+
+  const hasData = !loading && !error && playerCount > 0;
+  const noData = !loading && !error && playerCount === 0;
 
   // Pick sensible defaults once data arrives: custom category + play_time stat.
   useEffect(() => {
@@ -37,8 +42,12 @@ export default function App() {
     [players, selectedUuid],
   );
 
-  const hasData = !loading && !error && playerCount > 0;
-  const noData = !loading && !error && playerCount === 0;
+  useEffect(() => {
+    if (!hasData) return;
+
+    const timeoutId = window.setTimeout(() => saveStatsSnapshot(players), 250);
+    return () => window.clearTimeout(timeoutId);
+  }, [hasData, players]);
 
   return (
     <main className="max-w-[1400px] mx-auto p-6">
@@ -70,7 +79,7 @@ export default function App() {
 
       {hasData && (
         <>
-          <FeaturedBoards boards={featured} />
+          <FeaturedBoards boards={featured} players={players} previousSnapshot={previousSnapshot} />
           <Controls
             categories={categories}
             statsByCategory={statsByCategory}
@@ -81,11 +90,17 @@ export default function App() {
             onReload={() => setReloadKey(k => k + 1)}
           />
           <section className="grid grid-cols-[2fr_1fr] gap-4 max-[900px]:grid-cols-1">
-            <Leaderboard key={reloadKey} players={players} category={category} stat={stat} />
-            <PlayersList players={players} onSelect={setSelectedUuid} />
+            <Leaderboard
+              key={reloadKey}
+              players={players}
+              category={category}
+              stat={stat}
+              previousSnapshot={previousSnapshot}
+            />
+            <PlayersList players={players} previousSnapshot={previousSnapshot} onSelect={setSelectedUuid} />
           </section>
           <div className="mt-4">
-            <PlayerDetail player={selectedPlayer} />
+            <PlayerDetail player={selectedPlayer} previousSnapshot={previousSnapshot} />
           </div>
         </>
       )}

@@ -1,9 +1,18 @@
 import { useEffect, useState } from 'react';
 import type { Player } from '../types';
+import type { PreviousStatsSnapshot } from '../lib/statSnapshot';
+import { formatCustomStat, formatSnapshotAge } from '../lib/format';
+import { getPreviousStat } from '../lib/statSnapshot';
 import { buildPlayerDetail } from '../lib/stats';
 import Row from './Row';
 
-export default function PlayerDetail({ player }: { player: Player | null }) {
+export default function PlayerDetail({
+  player,
+  previousSnapshot,
+}: {
+  player: Player | null;
+  previousSnapshot: PreviousStatsSnapshot | null;
+}) {
   const detail = player ? buildPlayerDetail(player) : null;
   const [activeCategory, setActiveCategory] = useState<string | undefined>(detail?.categories[0]?.category);
 
@@ -21,6 +30,7 @@ export default function PlayerDetail({ player }: { player: Player | null }) {
   }
 
   const active = detail.categories.find(c => c.category === activeCategory);
+  const snapshotAge = previousSnapshot ? formatSnapshotAge(previousSnapshot.savedAt) : undefined;
 
   return (
     <section className="bg-panel/90 border border-border rounded-2xl p-4 backdrop-blur-md">
@@ -42,7 +52,28 @@ export default function PlayerDetail({ player }: { player: Player | null }) {
       </div>
       <div>
         {active?.topEntries.length ? (
-          active.topEntries.map(entry => <Row key={entry.stat} name={entry.label} value={entry.displayValue} />)
+          active.topEntries.map(entry => {
+            const previousValue = player
+              ? getPreviousStat(previousSnapshot, player.uuid, active.category, entry.stat)
+              : undefined;
+            const increased = previousValue !== undefined && entry.value > previousValue;
+            return (
+              <Row
+                key={entry.stat}
+                name={entry.label}
+                value={entry.displayValue}
+                increase={
+                  increased
+                    ? {
+                        previous: formatCustomStat(entry.stat, previousValue),
+                        delta: `+${formatCustomStat(entry.stat, entry.value - previousValue)}`,
+                        snapshotAge,
+                      }
+                    : undefined
+                }
+              />
+            );
+          })
         ) : (
           <div className="p-[18px] border border-dashed border-border rounded-2xl text-muted">
             No stats in this category.

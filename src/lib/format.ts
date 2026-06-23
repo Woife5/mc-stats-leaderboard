@@ -37,3 +37,17 @@ export function formatCustomStat(statId: string, value: number): string {
   if (typeof statId === 'string' && statId.startsWith('minecraft:damage_')) return formatHearts(value);
   return formatNumber(value);
 }
+
+export function formatSnapshotAge(savedAt: number): string {
+  const elapsedSeconds = Math.max(0, Math.floor((Date.now() - savedAt) / 1000));
+  if (elapsedSeconds < 60) return 'just now';
+
+  const minutes = Math.floor(elapsedSeconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ${minutes % 60}m ago`;
+
+  const days = Math.floor(hours / 24);
+  return `${days}d ${hours % 24}h ago`;
+}
