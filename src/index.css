@@ -1,0 +1,30 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-bg: #0b1020;
+  --color-panel: #11182b;
+  --color-muted: #8ea0c2;
+  --color-text: #eef3ff;
+  --color-accent: #6ea8fe;
+  --color-border: #22304d;
+  --color-chip: #18233c;
+
+  --font-sans: Inter, system-ui, sans-serif;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  margin: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background:
+    radial-gradient(circle at top, #18223b, transparent 45%),
+    var(--color-bg);
+  color: var(--color-text);
+}

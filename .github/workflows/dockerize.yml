@@ -10,8 +10,19 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
-            - name: Validate app syntax
-              run: npm run check
+            - name: Install pnpm
+              uses: pnpm/action-setup@v4
+            - name: Set up Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+                  cache: pnpm
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+            - name: Typecheck
+              run: pnpm check
+            - name: Build frontend
+              run: pnpm build
             - name: Get app version
               id: package-version
               uses: martinbeentjes/npm-get-version-action@v1.3.1

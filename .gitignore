@@ -1,4 +1,5 @@
 player-names-cache.json
 node_modules/
 stats/
+dist/
 .DS_Store

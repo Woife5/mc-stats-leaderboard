@@ -1,10 +1,28 @@
 {
   "name": "@woife5/mc-stats-leaderboard",
-  "version": "0.1.1",
+  "version": "1.0.0",
   "private": true,
+  "type": "module",
   "description": "Minecraft server stats leaderboard",
+  "packageManager": "pnpm@10.19.0",
   "scripts": {
-    "check": "node --check public/app.js",
-    "dev": "docker build -t mc-stats-leaderboard . && docker run --rm -p 8080:80 -v \"$PWD/public/app.js:/public/app.js:ro\" -v \"$PWD/public/index.html:/public/index.html:ro\" -v \"$PWD/public/styles.css:/public/styles.css:ro\" -v \"$PWD/stats:/public/stats:ro\" mc-stats-leaderboard"
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.1",
+    "@types/node": "^26.0.0",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.2",
+    "tailwindcss": "^4.3.1",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.16"
   }
 }

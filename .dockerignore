@@ -1,3 +1,5 @@
+# The image only needs the pre-built ./dist directory (see Dockerfile).
+# Ignore everything else so the build context stays small.
 .git
 .gitignore
 .github
@@ -5,7 +7,17 @@
 node_modules
 npm-debug.log
 stats
-dist
+src
+public
+index.html
+vite.config.ts
+tsconfig*.json
+package.json
+pnpm-lock.yaml
+pnpm-workspace.yaml
 README.md
 Dockerfile
 .dockerignore
+
+# Keep ./dist — it is copied into the image.
+!dist

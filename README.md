@@ -1,31 +1,41 @@
 # mc-stats-leaderboard
 
-A fully static, self-hosted Minecraft stats dashboard.
+A self-hosted Minecraft stats dashboard. The frontend is a React app (built
+with [Vite](https://vite.dev/) + TypeScript + [Tailwind CSS](https://tailwindcss.com/)).
 
-The container is just [`joseluisq/static-web-server`](https://static-web-server.net/)
-serving the web app and the raw player `UUID.json` files from your Minecraft
+The production container is just
+[`joseluisq/static-web-server`](https://static-web-server.net/) serving the
+prebuilt app bundle and the raw player `UUID.json` files from your Minecraft
 world. All parsing, aggregation, leaderboards and rendering happen in the
-browser.
-
-No third-party APIs, no backend process, no caches. The `package.json` exists
-only for project metadata, CI versioning, and frontend tooling scripts.
+browser — there is no backend process, no third-party APIs, and no caches.
 
 ## How it works
 
 * The Minecraft server writes `<world>/stats/<UUID>.json` files.
-* This container exposes that directory as `/stats/` over HTTP, with JSON
+* The container exposes that directory as `/stats/` over HTTP, with JSON
   directory listings enabled.
-* `index.html` + `app.js` fetch the listing, load every player file, build the
-  leaderboards, and render the UI.
-* Player names come from a hardcoded `PLAYER_NAMES` map at the top of
-  `public/app.js`. Any UUID not in the map is rendered verbatim — a signal
-  that the map needs an update.
+* The app fetches the listing, loads every player file, builds the
+  leaderboards, and renders the UI.
+* Player names come from the `PLAYER_NAMES` map in
+  [`src/data/playerNames.ts`](src/data/playerNames.ts). Any UUID not in the map
+  is rendered verbatim — a signal that the map needs an update.
+
+## Build model
+
+The app is built **on your host / in CI** (not inside Docker), and the
+resulting `dist/` directory is copied into the image. This keeps the
+multi-arch image build fast and free of an emulated Node toolchain.
+
+```bash
+pnpm install
+pnpm build          # outputs ./dist
+
+docker build -t mc-stats-leaderboard .
+```
 
 ## Run with Docker
 
 ```bash
-docker build -t mc-stats-leaderboard .
-
 docker run --rm -p 8080:80 \
   -v /path/to/mc-server/world/stats:/public/stats:ro \
   mc-stats-leaderboard
@@ -44,11 +54,11 @@ so a stats file exists):
 1. Find the new UUID. Easiest way: open the dashboard — the new player will
    appear with their raw UUID as the display name. Or look directly in
    `<world>/stats/` for a freshly created `*.json` file.
-2. Add an entry to the `PLAYER_NAMES` object at the top of
-   [`public/app.js`](public/app.js):
+2. Add an entry to the `PLAYER_NAMES` object in
+   [`src/data/playerNames.ts`](src/data/playerNames.ts):
 
-   ```js
-   const PLAYER_NAMES = {
+   ```ts
+   export const PLAYER_NAMES: Record<string, string> = {
      // ...existing entries...
      '00000000-0000-0000-0000-000000000000': 'NewPlayerName',
    };
@@ -56,6 +66,7 @@ so a stats file exists):
 3. Rebuild and redeploy:
 
    ```bash
+   pnpm build
    docker build -t mc-stats-leaderboard .
    # then restart your container
    ```
@@ -65,44 +76,45 @@ stats still appear on leaderboards with their proper name.
 
 ## Local development
 
-No build step. The easiest local loop is the Docker-backed npm script:
-
 ```bash
-npm run dev
+pnpm install
+pnpm dev
 ```
 
-Then open <http://localhost:8080>. The script builds the production image and
-live-mounts `public/` plus the repo-local `stats/` directory.
-
-You can also serve `public/` with `static-web-server` directly, as long as the
-directory listing returns JSON:
-
-```bash
-# install via Homebrew / cargo / docker
-static-web-server \
-  --root public \
-  --port 8080 \
-  --directory-listing=true \
-  --directory-listing-format=json
-```
-
-Or run the Docker image with live-mounted source files for fast iteration:
-
-```bash
-docker run --rm -p 8080:80 \
-  -v "$PWD/public/app.js:/public/app.js:ro" \
-  -v "$PWD/public/index.html:/public/index.html:ro" \
-  -v "$PWD/public/styles.css:/public/styles.css:ro" \
-  -v "$PWD/stats:/public/stats:ro" \
-  mc-stats-leaderboard
-```
+Then open the URL Vite prints (default <http://localhost:5173>). The Vite dev
+server runs with hot module reloading and includes a dev-only middleware that
+serves the repo-local `stats/` directory at `/stats/`, mirroring the JSON
+directory-listing format that `static-web-server` produces in production. This
+means the app code is identical in dev and prod.
 
 The repo's `stats/` directory (gitignored) is for local testing — drop a few
 real `<UUID>.json` files there.
 
+Other useful scripts:
+
+```bash
+pnpm check          # type-check the project (tsc -b)
+pnpm build          # production build into ./dist
+pnpm preview        # preview the production build locally
+```
+
+### Testing the production image
+
+To exercise the exact production setup (static-web-server serving the built
+bundle plus a bind-mounted stats directory):
+
+```bash
+pnpm build
+docker build -t mc-stats-leaderboard .
+docker run --rm -p 8080:80 \
+  -v "$PWD/stats:/public/stats:ro" \
+  mc-stats-leaderboard
+```
+
 Plain static hosts such as GitHub Pages are not enough by themselves, because
-the app needs `/stats/` to return a JSON directory listing. Use the Docker image
-or configure another static server with equivalent directory-listing behavior.
+the app needs `/stats/` to return a JSON directory listing. Use the Docker
+image or configure another static server with equivalent directory-listing
+behavior.
 
 ## Refresh model
 

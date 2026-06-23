@@ -2,9 +2,10 @@ FROM joseluisq/static-web-server:2-alpine
 
 WORKDIR /public
 
-# Copy the static web app. The stats directory is expected to be bind-mounted
-# at /public/stats at runtime (read-only) from the MC server's world data.
-COPY ./public /public
+# Copy the pre-built React app (produced by `pnpm build` on the host/CI into
+# ./dist). The stats directory is expected to be bind-mounted at /public/stats
+# at runtime (read-only) from the MC server's world data.
+COPY ./dist /public
 
 # Configuration via environment variables.
 # HTTPS is expected to be handled by an upstream reverse proxy.
