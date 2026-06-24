@@ -8,7 +8,6 @@ interface ControlsProps {
   stat: string;
   onCategoryChange: (category: string) => void;
   onStatChange: (stat: string) => void;
-  onReload: () => void;
 }
 
 const FIELD_CLASS =
@@ -21,7 +20,6 @@ export default function Controls({
   stat,
   onCategoryChange,
   onStatChange,
-  onReload,
 }: ControlsProps) {
   const stats = [...(statsByCategory[category] || [])].sort();
 
@@ -51,13 +49,6 @@ export default function Controls({
           )}
         </select>
       </label>
-      <button
-        type="button"
-        onClick={onReload}
-        className="border-none rounded-xl px-3 py-2.5 font-[inherit] text-text cursor-pointer bg-gradient-to-b from-[#2c65d8] to-[#214aa3]"
-      >
-        Reload
-      </button>
     </section>
   );
 }

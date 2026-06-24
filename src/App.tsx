@@ -13,7 +13,6 @@ export default function App() {
 
   const [category, setCategory] = useState('');
   const [stat, setStat] = useState('');
-  const [reloadKey, setReloadKey] = useState(0);
   const [selectedUuid, setSelectedUuid] = useState<string | null>(null);
   const [previousSnapshot] = useState(loadPreviousStatsSnapshot);
 
@@ -87,11 +86,9 @@ export default function App() {
             stat={stat}
             onCategoryChange={setCategory}
             onStatChange={setStat}
-            onReload={() => setReloadKey(k => k + 1)}
           />
           <section className="grid grid-cols-[2fr_1fr] gap-4 max-[900px]:grid-cols-1">
             <Leaderboard
-              key={reloadKey}
               players={players}
               category={category}
               stat={stat}
