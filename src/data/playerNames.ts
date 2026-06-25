@@ -16,6 +16,7 @@ export const PLAYER_NAMES: Record<string, string> = {
   'cf3e20ab-2505-456e-8c87-51e79586c195': 'manujell',
   'e567583f-871a-41fd-920d-2b0e7a77255b': 'DaDaniel_',
   '600b999b-7fa8-4ebd-ad93-010151347dd8': 'MauzBoi',
+  '474f317e-d7ba-4297-8b68-32264ae773d4' : 'Aletob',
 };
 
 export function resolveName(uuid: string): string {
