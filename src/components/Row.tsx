@@ -1,4 +1,5 @@
-import StatBubble, { type IncreaseDetails } from './StatBubble';
+import type { IncreaseDetails } from '../types';
+import StatBubble from './StatBubble';
 
 interface RowProps {
   name: string;

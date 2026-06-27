@@ -1,6 +1,6 @@
 {
   "name": "@woife5/mc-stats-leaderboard",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "private": true,
   "type": "module",
   "description": "Minecraft server stats leaderboard",

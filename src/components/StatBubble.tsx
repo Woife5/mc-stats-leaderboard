@@ -1,10 +1,5 @@
 import type { ReactNode } from 'react';
-
-export interface IncreaseDetails {
-  previous: string;
-  delta: string;
-  snapshotAge?: string;
-}
+import type { IncreaseDetails } from '../types';
 
 export default function StatBubble({ children, increase }: { children: ReactNode; increase?: IncreaseDetails }) {
   const summary = increase ? `${increase.delta} since last refresh` : undefined;

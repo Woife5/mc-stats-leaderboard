@@ -69,3 +69,10 @@ export interface PlayerDetail {
   name: string;
   categories: PlayerDetailCategory[];
 }
+
+/** Tooltip details for a stat that increased since the previous snapshot. */
+export interface IncreaseDetails {
+  previous: string;
+  delta: string;
+  snapshotAge?: string;
+}

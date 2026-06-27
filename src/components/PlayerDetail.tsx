@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { Player } from '../types';
 import type { PreviousStatsSnapshot } from '../lib/statSnapshot';
 import { formatCustomStat, formatSnapshotAge } from '../lib/format';
+import { buildIncrease } from '../lib/increase';
 import { getPreviousStat } from '../lib/statSnapshot';
 import { buildPlayerDetail } from '../lib/stats';
 import Row from './Row';
@@ -56,21 +57,12 @@ export default function PlayerDetail({
             const previousValue = player
               ? getPreviousStat(previousSnapshot, player.uuid, active.category, entry.stat)
               : undefined;
-            const increased = previousValue !== undefined && entry.value > previousValue;
             return (
               <Row
                 key={entry.stat}
                 name={entry.label}
                 value={entry.displayValue}
-                increase={
-                  increased
-                    ? {
-                        previous: formatCustomStat(entry.stat, previousValue),
-                        delta: `+${formatCustomStat(entry.stat, entry.value - previousValue)}`,
-                        snapshotAge,
-                      }
-                    : undefined
-                }
+                increase={buildIncrease(v => formatCustomStat(entry.stat, v), entry.value, previousValue, snapshotAge)}
               />
             );
           })

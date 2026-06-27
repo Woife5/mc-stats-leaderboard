@@ -3,6 +3,7 @@ import type { Player } from '../types';
 import type { PreviousStatsSnapshot } from '../lib/statSnapshot';
 import { buildLeaderboardRows, withDisplay } from '../lib/stats';
 import { formatCustomStat, formatSnapshotAge } from '../lib/format';
+import { buildIncrease } from '../lib/increase';
 import { getPreviousStat } from '../lib/statSnapshot';
 import Row from './Row';
 
@@ -29,21 +30,12 @@ export default function Leaderboard({ players, category, stat, previousSnapshot 
 
     body = rows.map(row => {
       const previousValue = getPreviousStat(previousSnapshot, row.uuid, category, stat);
-      const increased = previousValue !== undefined && row.value > previousValue;
       return (
         <Row
           key={row.uuid}
           name={row.name}
           value={row.displayValue ?? String(row.value)}
-          increase={
-            increased
-              ? {
-                  previous: formatCustomStat(stat, previousValue),
-                  delta: `+${formatCustomStat(stat, row.value - previousValue)}`,
-                  snapshotAge,
-                }
-              : undefined
-          }
+          increase={buildIncrease(v => formatCustomStat(stat, v), row.value, previousValue, snapshotAge)}
         />
       );
     });

@@ -10,6 +10,7 @@ import type {
   PlayerDetail,
   RawStatsFile,
   StatsByCategory,
+  StatsByCategoryValues,
   StatValues,
 } from '../types';
 import { formatCustomStat, formatNumber, humanize } from './format';
@@ -69,55 +70,70 @@ function withDisplay(row: LeaderboardRow, stat: string): LeaderboardRow {
   return { ...row, displayValue: formatCustomStat(stat, row.value) };
 }
 
-function sumStats(values: StatValues | undefined, filter: (id: string) => boolean = () => true): number {
+export function sumStats(values: StatValues | undefined, filter: (id: string) => boolean = () => true): number {
   return Object.entries(values || {}).reduce((total, [id, value]) => total + (filter(id) ? value : 0), 0);
 }
 
-function topBoard(players: Player[], title: string, category: string, stat: string, limit = 10): Board {
+/** Shared context computed once per render and passed to every board's getValue. */
+export interface FeaturedContext {
+  minedBlockIds: Set<string>;
+}
+
+/** A single declarative definition of a featured board, used to compute both
+ *  the current value and the previous-snapshot value from the same logic. */
+export interface FeaturedBoardDef {
+  title: string;
+  getValue: (stats: StatsByCategoryValues, ctx: FeaturedContext) => number;
+  format: (value: number) => string;
+}
+
+/** A board backed by a single `minecraft:custom` stat, formatted per its unit. */
+function customBoard(title: string, statId: string): FeaturedBoardDef {
   return {
     title,
-    rows: leaderboardRows(players, category, stat)
-      .slice(0, limit)
-      .map(r => withDisplay(r, stat)),
+    getValue: stats => stats['minecraft:custom']?.[statId] || 0,
+    format: value => formatCustomStat(statId, value),
   };
 }
 
-function totalBoard(players: Player[], title: string, getValue: (p: Player) => number, limit = 10): Board {
+/** The featured boards, defined once. buildFeatured and the snapshot
+ *  comparison in FeaturedBoards both derive from these descriptors. */
+export const FEATURED_BOARDS: FeaturedBoardDef[] = [
+  { title: 'Blocks broken', getValue: stats => sumStats(stats['minecraft:mined']), format: formatNumber },
+  {
+    title: 'Blocks placed',
+    getValue: (stats, ctx) => sumStats(stats['minecraft:used'], id => ctx.minedBlockIds.has(id)),
+    format: formatNumber,
+  },
+  { title: 'Mob kills', getValue: stats => sumStats(stats['minecraft:killed']), format: formatNumber },
+  customBoard('Damage taken', 'minecraft:damage_taken'),
+  customBoard('Deaths', 'minecraft:deaths'),
+  customBoard('Walked', 'minecraft:walk_one_cm'),
+  customBoard('Sprinted', 'minecraft:sprint_one_cm'),
+  customBoard('Distance by boat', 'minecraft:boat_one_cm'),
+  customBoard('Flown', 'minecraft:aviate_one_cm'),
+  customBoard('Chests opened', 'minecraft:open_chest'),
+];
+
+/** Compute the shared context the featured boards need (e.g. the set of block
+ *  ids any player has mined, used to filter "blocks placed"). */
+export function buildFeaturedContext(players: Player[]): FeaturedContext {
   return {
-    title,
+    minedBlockIds: new Set(players.flatMap(p => Object.keys(p.stats?.['minecraft:mined'] || {}))),
+  };
+}
+
+export function buildFeatured(players: Player[], limit = 10): Board[] {
+  const ctx = buildFeaturedContext(players);
+  return FEATURED_BOARDS.map(def => ({
+    title: def.title,
     rows: players
-      .map(p => ({ uuid: p.uuid, name: p.name, value: getValue(p) }))
+      .map(p => ({ uuid: p.uuid, name: p.name, value: def.getValue(p.stats || {}, ctx) }))
       .filter(r => r.value > 0)
       .sort((a, b) => b.value - a.value)
       .slice(0, limit)
-      .map(r => ({ ...r, displayValue: formatNumber(r.value) })),
-  };
-}
-
-export function buildFeatured(players: Player[]): Board[] {
-  const minedBlockIds = new Set(players.flatMap(p => Object.keys(p.stats?.['minecraft:mined'] || {})));
-  const mobKillRows = players
-    .map(p => ({
-      uuid: p.uuid,
-      name: p.name,
-      value: Object.values(p.stats?.['minecraft:killed'] || {}).reduce((a, b) => a + b, 0),
-    }))
-    .filter(r => r.value > 0)
-    .sort((a, b) => b.value - a.value)
-    .slice(0, 10)
-    .map(r => ({ ...r, displayValue: formatNumber(r.value) }));
-  return [
-    totalBoard(players, 'Blocks broken', p => sumStats(p.stats?.['minecraft:mined'])),
-    totalBoard(players, 'Blocks placed', p => sumStats(p.stats?.['minecraft:used'], id => minedBlockIds.has(id))),
-    { title: 'Mob kills', rows: mobKillRows },
-    topBoard(players, 'Damage taken', 'minecraft:custom', 'minecraft:damage_taken'),
-    topBoard(players, 'Deaths', 'minecraft:custom', 'minecraft:deaths'),
-    topBoard(players, 'Walked', 'minecraft:custom', 'minecraft:walk_one_cm'),
-    topBoard(players, 'Sprinted', 'minecraft:custom', 'minecraft:sprint_one_cm'),
-    topBoard(players, 'Distance by boat', 'minecraft:custom', 'minecraft:boat_one_cm'),
-    topBoard(players, 'Flown', 'minecraft:custom', 'minecraft:aviate_one_cm'),
-    topBoard(players, 'Chests opened', 'minecraft:custom', 'minecraft:open_chest'),
-  ];
+      .map(r => ({ ...r, displayValue: def.format(r.value) })),
+  }));
 }
 
 export function buildPlayerDetail(player: Player): PlayerDetail {

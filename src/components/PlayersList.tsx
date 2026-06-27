@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import type { Player } from '../types';
 import type { PreviousStatsSnapshot } from '../lib/statSnapshot';
 import { formatCustomStat, formatSnapshotAge } from '../lib/format';
+import { buildIncrease } from '../lib/increase';
 import { getPreviousStat } from '../lib/statSnapshot';
 import StatBubble from './StatBubble';
 
@@ -34,7 +35,6 @@ export default function PlayersList({ players, previousSnapshot, onSelect }: Pla
       {matches.length ? (
         matches.map(p => {
           const previousPlayTime = getPreviousStat(previousSnapshot, p.uuid, 'minecraft:custom', 'minecraft:play_time');
-          const playTimeIncreased = previousPlayTime !== undefined && p.topMetrics.play_time > previousPlayTime;
 
           return (
             <button
@@ -46,15 +46,12 @@ export default function PlayersList({ players, previousSnapshot, onSelect }: Pla
               <span>{p.name}</span>
               <span className="flex gap-2 items-center whitespace-nowrap">
                 <StatBubble
-                  increase={
-                    playTimeIncreased
-                      ? {
-                          previous: formatCustomStat('minecraft:play_time', previousPlayTime),
-                          delta: `+${formatCustomStat('minecraft:play_time', p.topMetrics.play_time - previousPlayTime)}`,
-                          snapshotAge,
-                        }
-                      : undefined
-                  }
+                  increase={buildIncrease(
+                    v => formatCustomStat('minecraft:play_time', v),
+                    p.topMetrics.play_time,
+                    previousPlayTime,
+                    snapshotAge,
+                  )}
                 >
                   {formatCustomStat('minecraft:play_time', p.topMetrics.play_time)}
                 </StatBubble>
