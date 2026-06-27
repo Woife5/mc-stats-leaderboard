@@ -1,7 +1,7 @@
 // Loads all stats on mount, mirroring the original app's load() flow.
 
 import { useEffect, useState } from 'react';
-import { listStatsUuids, loadStatsFile } from '../lib/api';
+import { listStatsUuids, loadStatsFile, loadUserCache } from '../lib/api';
 import { buildCategoryIndex, buildFeatured, buildPlayer } from '../lib/stats';
 import type { Board, Category, Player, StatsByCategory } from '../types';
 
@@ -32,7 +32,7 @@ export function useStats(): StatsData {
     let cancelled = false;
 
     async function load() {
-      const uuids = await listStatsUuids();
+      const [uuids, names] = await Promise.all([listStatsUuids(), loadUserCache()]);
       if (cancelled) return;
 
       if (!uuids.length) {
@@ -43,7 +43,7 @@ export function useStats(): StatsData {
       const rawFiles = await Promise.all(uuids.map(loadStatsFile));
       if (cancelled) return;
 
-      const players = uuids.map((uuid, i) => buildPlayer(uuid, rawFiles[i])).filter((p): p is NonNullable<typeof p> => Boolean(p));
+      const players = uuids.map((uuid, i) => buildPlayer(uuid, rawFiles[i], names)).filter((p): p is NonNullable<typeof p> => Boolean(p));
 
       const { categories, statsByCategory } = buildCategoryIndex(players);
       setData({

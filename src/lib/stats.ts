@@ -1,7 +1,7 @@
 // Pure domain transforms: build players, category index, leaderboards,
 // featured boards, and per-player detail.
 
-import { resolveName } from '../data/playerNames';
+import { resolveName } from '../data/resolveName';
 import type {
   Board,
   Category,
@@ -26,7 +26,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   'minecraft:killed_by': 'Killed by',
 };
 
-export function buildPlayer(uuid: string, raw: RawStatsFile | null): Player {
+export function buildPlayer(uuid: string, raw: RawStatsFile | null, names: Record<string, string>): Player {
   const stats = raw?.stats || {};
   const custom = stats['minecraft:custom'] || {};
   const killed = stats['minecraft:killed'] || {};
@@ -38,7 +38,7 @@ export function buildPlayer(uuid: string, raw: RawStatsFile | null): Player {
     sprint_one_cm: custom['minecraft:sprint_one_cm'] || 0,
     aviate_one_cm: custom['minecraft:aviate_one_cm'] || 0,
   };
-  return { uuid, name: resolveName(uuid), stats, topMetrics };
+  return { uuid, name: resolveName(uuid, names), stats, topMetrics };
 }
 
 export function buildCategoryIndex(players: Player[]): {

@@ -16,9 +16,11 @@ browser — there is no backend process, no third-party APIs, and no caches.
   directory listings enabled.
 * The app fetches the listing, loads every player file, builds the
   leaderboards, and renders the UI.
-* Player names come from the `PLAYER_NAMES` map in
-  [`src/data/playerNames.ts`](src/data/playerNames.ts). Any UUID not in the map
-  is rendered verbatim — a signal that the map needs an update.
+* Player names are resolved from your server's `usercache.json` (a file the
+  Minecraft server maintains automatically, mapping UUIDs to the last-known
+  names). Mount it into the container (see below) and new players appear with
+  their proper names — no rebuild needed. Any UUID not found in the cache is
+  rendered verbatim.
 
 ## Build model
 
@@ -38,6 +40,7 @@ docker build -t mc-stats-leaderboard .
 ```bash
 docker run --rm -p 8080:80 \
   -v /path/to/mc-server/world/stats:/public/stats:ro \
+  -v /path/to/mc-server/usercache.json:/public/usercache.json:ro \
   mc-stats-leaderboard
 ```
 
@@ -46,33 +49,26 @@ Then open <http://localhost:8080>.
 Mount read-only (`:ro`) so the container can never modify the live MC server
 data.
 
-## Adding a new player
+The second mount is optional but recommended: `usercache.json` lives in your
+Minecraft server's root directory (next to `world/`) and lets the dashboard
+display player names instead of raw UUIDs. The Minecraft server updates this
+file on its own as players connect, so the leaderboard picks up new players and
+name changes on the next page reload — no rebuild required. If you omit the
+mount, everything still works but players show up as bare UUIDs.
 
-When a new player gets added to the whitelist (and has played at least once,
-so a stats file exists):
+## Player names
 
-1. Find the new UUID. Easiest way: open the dashboard — the new player will
-   appear with their raw UUID as the display name. Or look directly in
-   `<world>/stats/` for a freshly created `*.json` file.
-2. Add an entry to the `PLAYER_NAMES` object in
-   [`src/data/playerNames.ts`](src/data/playerNames.ts):
+Names are resolved at runtime from your server's `usercache.json`, so there is
+nothing to configure or rebuild when players come and go:
 
-   ```ts
-   export const PLAYER_NAMES: Record<string, string> = {
-     // ...existing entries...
-     '00000000-0000-0000-0000-000000000000': 'NewPlayerName',
-   };
-   ```
-3. Rebuild and redeploy:
+* A new player appears on the leaderboard as soon as they have a stats file and
+  are present in `usercache.json` (the Minecraft server adds them on connect).
+* Players who have left the server keep their proper name as long as they remain
+  in the cache, so their historical stats stay readable.
+* Any UUID that isn't in the cache is rendered as the raw UUID — a hint that the
+  `usercache.json` mount is missing or that player hasn't connected recently.
 
-   ```bash
-   pnpm build
-   docker build -t mc-stats-leaderboard .
-   # then restart your container
-   ```
-
-Removed whitelist members stay in the map intentionally — their historical
-stats still appear on leaderboards with their proper name.
+Just reload the dashboard to pick up changes.
 
 ## Local development
 
@@ -83,12 +79,15 @@ pnpm dev
 
 Then open the URL Vite prints (default <http://localhost:5173>). The Vite dev
 server runs with hot module reloading and includes a dev-only middleware that
-serves the repo-local `stats/` directory at `/stats/`, mirroring the JSON
-directory-listing format that `static-web-server` produces in production. This
+serves the repo-local `stats/` directory at `/stats/` and a repo-local
+`usercache.json` at `/usercache.json`, mirroring the JSON directory-listing
+format and user-cache file that `static-web-server` serves in production. This
 means the app code is identical in dev and prod.
 
-The repo's `stats/` directory (gitignored) is for local testing — drop a few
-real `<UUID>.json` files there.
+The repo's `stats/` directory and `usercache.json` file (both gitignored) are
+for local testing — drop a few real `<UUID>.json` files into `stats/`, and
+optionally copy your server's `usercache.json` into the repo root to see real
+names. Without it, players render as raw UUIDs.
 
 Other useful scripts:
 
@@ -108,6 +107,7 @@ pnpm build
 docker build -t mc-stats-leaderboard .
 docker run --rm -p 8080:80 \
   -v "$PWD/stats:/public/stats:ro" \
+  -v "$PWD/usercache.json:/public/usercache.json:ro" \
   mc-stats-leaderboard
 ```
 

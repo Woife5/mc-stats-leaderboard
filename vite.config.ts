@@ -6,6 +6,7 @@ import tailwindcss from '@tailwindcss/vite';
 import { defineConfig, type Plugin } from 'vite';
 
 const STATS_DIR = fileURLToPath(new URL('./stats', import.meta.url));
+const USERCACHE_FILE = fileURLToPath(new URL('./usercache.json', import.meta.url));
 
 /**
  * Dev-only middleware that serves the repo-local `stats/` directory in the
@@ -13,6 +14,7 @@ const STATS_DIR = fileURLToPath(new URL('./stats', import.meta.url));
  *
  *   GET /stats/            -> JSON directory listing
  *   GET /stats/<uuid>.json -> raw stats file
+ *   GET /usercache.json    -> the MC server's user cache (uuid -> name)
  *
  * This mirrors SWS's `--directory-listing-format=json` contract so the app
  * code is identical in dev and prod.
@@ -24,10 +26,26 @@ function statsDevServer(): Plugin {
     configureServer(server) {
       server.middlewares.use(async (req, res, next) => {
         const url = req.url ?? '';
-        if (!url.startsWith('/stats')) return next();
 
         // Strip query string (the app appends ?t=<timestamp> cache busters).
         const pathname = decodeURIComponent(url.split('?')[0]);
+
+        // Serve the repo-local usercache.json, mirroring the file the MC server
+        // writes and that gets bind-mounted at /public/usercache.json in prod.
+        // Absent file -> 404, so the app falls back to raw UUIDs just like prod.
+        if (pathname === '/usercache.json') {
+          try {
+            const body = await readFile(USERCACHE_FILE);
+            res.setHeader('content-type', 'application/json');
+            res.end(body);
+          } catch {
+            res.statusCode = 404;
+            res.end('Not found');
+          }
+          return;
+        }
+
+        if (!url.startsWith('/stats')) return next();
         const relative = normalize(pathname.replace(/^\/stats\/?/, '')).replace(/^(\.\.(\/|\\|$))+/, '');
 
         try {

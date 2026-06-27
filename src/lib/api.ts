@@ -6,6 +6,7 @@
 import type { ListingEntry, RawStatsFile } from '../types';
 
 export const STATS_PATH = '/stats/';
+export const USERCACHE_PATH = '/usercache.json';
 
 function cacheBust(url: string): string {
   const sep = url.includes('?') ? '&' : '?';
@@ -32,5 +33,30 @@ export async function loadStatsFile(uuid: string): Promise<RawStatsFile | null> 
   } catch (err) {
     console.warn(`Failed to load ${uuid}: ${(err as Error).message}`);
     return null;
+  }
+}
+
+interface UserCacheEntry {
+  name?: string;
+  uuid?: string;
+}
+
+/**
+ * Loads the Minecraft server's usercache.json (an array of {name, uuid, ...})
+ * and flattens it to a lowercased uuid -> name map. A missing (404) or
+ * malformed file resolves to an empty map, so the app falls back to rendering
+ * raw UUIDs.
+ */
+export async function loadUserCache(): Promise<Record<string, string>> {
+  try {
+    const entries = await getJson<UserCacheEntry[]>(USERCACHE_PATH);
+    if (!Array.isArray(entries)) return {};
+    const map: Record<string, string> = {};
+    for (const entry of entries) {
+      if (entry?.uuid && entry?.name) map[entry.uuid.toLowerCase()] = entry.name;
+    }
+    return map;
+  } catch {
+    return {};
   }
 }

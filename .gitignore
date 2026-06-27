@@ -1,5 +1,5 @@
-player-names-cache.json
 node_modules/
 stats/
+usercache.json
 dist/
 .DS_Store
