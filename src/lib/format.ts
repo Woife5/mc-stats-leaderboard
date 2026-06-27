@@ -22,8 +22,8 @@ export function formatDurationTicks(ticks: number): string {
 
 export function formatDistanceCm(cm: number): string {
   const m = cm / 100;
-  if (m >= 1000) return `${(m / 1000).toFixed(m >= 10000 ? 0 : 1)} km`;
-  return `${m.toFixed(m >= 100 ? 0 : 1)} m`;
+  if (m >= 1000) return `${formatNumber(Number((m / 1000).toFixed(m >= 10000 ? 0 : 1)))} km`;
+  return `${formatNumber(Number(m.toFixed(m >= 100 ? 0 : 1)))} m`;
 }
 
 export function formatHearts(tenths: number): string {
@@ -32,7 +32,12 @@ export function formatHearts(tenths: number): string {
 
 export function formatCustomStat(statId: string, value: number): string {
   if (typeof statId === 'string' && statId.endsWith('_one_cm')) return formatDistanceCm(value);
-  if (statId === 'minecraft:play_time' || (typeof statId === 'string' && statId.startsWith('minecraft:time_since_')))
+  if (
+    statId === 'minecraft:play_time' ||
+    statId === 'minecraft:sneak_time' ||
+    statId === 'minecraft:total_world_time' ||
+    (typeof statId === 'string' && statId.startsWith('minecraft:time_since_'))
+  )
     return formatDurationTicks(value);
   if (typeof statId === 'string' && statId.startsWith('minecraft:damage_')) return formatHearts(value);
   return formatNumber(value);
