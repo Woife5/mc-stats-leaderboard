@@ -5,12 +5,13 @@ import { getPreviousStat } from '../lib/statSnapshot';
 import Row from './Row';
 
 const FEATURED_CUSTOM_STATS: Record<string, string> = {
+  'Damage taken': 'minecraft:damage_taken',
   Deaths: 'minecraft:deaths',
   Walked: 'minecraft:walk_one_cm',
   Sprinted: 'minecraft:sprint_one_cm',
   'Distance by boat': 'minecraft:boat_one_cm',
   Flown: 'minecraft:aviate_one_cm',
-  'Play time': 'minecraft:play_time',
+  'Chests opened': 'minecraft:open_chest',
 };
 
 function sumStats(values: StatValues | undefined, filter: (id: string) => boolean = () => true): number {

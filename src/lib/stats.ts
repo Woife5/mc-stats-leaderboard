@@ -110,12 +110,13 @@ export function buildFeatured(players: Player[]): Board[] {
     totalBoard(players, 'Blocks broken', p => sumStats(p.stats?.['minecraft:mined'])),
     totalBoard(players, 'Blocks placed', p => sumStats(p.stats?.['minecraft:used'], id => minedBlockIds.has(id))),
     { title: 'Mob kills', rows: mobKillRows },
+    topBoard(players, 'Damage taken', 'minecraft:custom', 'minecraft:damage_taken'),
     topBoard(players, 'Deaths', 'minecraft:custom', 'minecraft:deaths'),
     topBoard(players, 'Walked', 'minecraft:custom', 'minecraft:walk_one_cm'),
     topBoard(players, 'Sprinted', 'minecraft:custom', 'minecraft:sprint_one_cm'),
     topBoard(players, 'Distance by boat', 'minecraft:custom', 'minecraft:boat_one_cm'),
     topBoard(players, 'Flown', 'minecraft:custom', 'minecraft:aviate_one_cm'),
-    topBoard(players, 'Play time', 'minecraft:custom', 'minecraft:play_time'),
+    topBoard(players, 'Chests opened', 'minecraft:custom', 'minecraft:open_chest'),
   ];
 }
 
@@ -125,7 +126,6 @@ export function buildPlayerDetail(player: Player): PlayerDetail {
     label: CATEGORY_LABELS[category] || humanize(category),
     topEntries: Object.entries(values || {})
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 10)
       .map(([stat, value]) => ({
         stat,
         label: humanize(stat),

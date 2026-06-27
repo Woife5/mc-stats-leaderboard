@@ -27,7 +27,7 @@ export function formatDistanceCm(cm: number): string {
 }
 
 export function formatHearts(tenths: number): string {
-  return `${(tenths / 2).toFixed(tenths % 2 ? 1 : 0)} ❤`;
+  return `${formatNumber(tenths / 20)} ❤`;
 }
 
 export function formatCustomStat(statId: string, value: number): string {
