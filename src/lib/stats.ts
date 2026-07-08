@@ -136,8 +136,22 @@ export function buildFeatured(players: Player[], limit = 10): Board[] {
   }));
 }
 
+/** Canonical category order: as defined in CATEGORY_LABELS, unknown categories alphabetically last. */
+const CATEGORY_ORDER = Object.keys(CATEGORY_LABELS);
+
+function compareCategories(a: string, b: string): number {
+  const ia = CATEGORY_ORDER.indexOf(a);
+  const ib = CATEGORY_ORDER.indexOf(b);
+  if (ia !== -1 && ib !== -1) return ia - ib;
+  if (ia !== -1) return -1;
+  if (ib !== -1) return 1;
+  return a.localeCompare(b);
+}
+
 export function buildPlayerDetail(player: Player): PlayerDetail {
-  const categories = Object.entries(player.stats || {}).map(([category, values]) => ({
+  const categories = Object.entries(player.stats || {})
+    .sort(([a], [b]) => compareCategories(a, b))
+    .map(([category, values]) => ({
     category,
     label: CATEGORY_LABELS[category] || humanize(category),
     topEntries: Object.entries(values || {})
