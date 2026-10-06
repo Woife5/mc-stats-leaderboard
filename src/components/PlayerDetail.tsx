@@ -1,18 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { Player } from '../types';
-import type { PreviousStatsSnapshot } from '../lib/statSnapshot';
-import { formatCustomStat, formatSnapshotAge } from '../lib/format';
-import { buildIncrease } from '../lib/increase';
-import { getPreviousStat } from '../lib/statSnapshot';
+import { formatCustomStat } from '../lib/format';
+import { buildSeries, getPreviousStat, type DailySnapshot, type SeriesPoint } from '../lib/history';
+import { buildIncrease, describeComparison } from '../lib/increase';
 import { buildPlayerDetail } from '../lib/stats';
 import Row from './Row';
 
 export default function PlayerDetail({
   player,
-  previousSnapshot,
+  history,
+  previous,
 }: {
   player: Player | null;
-  previousSnapshot: PreviousStatsSnapshot | null;
+  history: DailySnapshot[];
+  previous: DailySnapshot | null;
 }) {
   const detail = player ? buildPlayerDetail(player) : null;
   const [activeCategory, setActiveCategory] = useState<string | undefined>(detail?.categories[0]?.category);
@@ -20,6 +21,16 @@ export default function PlayerDetail({
   useEffect(() => {
     setActiveCategory(detail?.categories[0]?.category);
   }, [detail?.uuid]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const active = detail?.categories.find(c => c.category === activeCategory);
+  const uuid = player?.uuid;
+
+  // Series for the active category only, keyed by stat id.
+  const seriesByStat = useMemo((): Map<string, SeriesPoint[]> => {
+    if (!uuid || !activeCategory) return new Map();
+    const stats = Object.keys(player?.stats[activeCategory] ?? {});
+    return new Map(stats.map(stat => [stat, buildSeries(history, uuid, s => s?.[activeCategory]?.[stat])]));
+  }, [history, uuid, activeCategory, player]);
 
   if (!detail) {
     return (
@@ -30,8 +41,7 @@ export default function PlayerDetail({
     );
   }
 
-  const active = detail.categories.find(c => c.category === activeCategory);
-  const snapshotAge = previousSnapshot ? formatSnapshotAge(previousSnapshot.savedAt) : undefined;
+  const comparison = describeComparison(previous);
 
   return (
     <section className="bg-panel/90 border border-border rounded-2xl p-4 backdrop-blur-md">
@@ -54,15 +64,16 @@ export default function PlayerDetail({
       <div>
         {active?.topEntries.length ? (
           active.topEntries.map(entry => {
-            const previousValue = player
-              ? getPreviousStat(previousSnapshot, player.uuid, active.category, entry.stat)
-              : undefined;
+            const previousValue = getPreviousStat(previous, detail.uuid, active.category, entry.stat);
+            const format = (v: number) => formatCustomStat(entry.stat, v);
             return (
               <Row
                 key={entry.stat}
                 name={entry.label}
                 value={entry.displayValue}
-                increase={buildIncrease(v => formatCustomStat(entry.stat, v), entry.value, previousValue, snapshotAge)}
+                increase={buildIncrease(format, entry.value, previousValue, comparison)}
+                series={seriesByStat.get(entry.stat)}
+                format={format}
               />
             );
           })

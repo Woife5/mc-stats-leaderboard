@@ -4,8 +4,9 @@ import FeaturedBoards from './components/FeaturedBoards';
 import Leaderboard from './components/Leaderboard';
 import PlayerDetail from './components/PlayerDetail';
 import PlayersList from './components/PlayersList';
+import { HistoryPopoverProvider } from './components/HistoryPopover';
+import { useStatHistory } from './hooks/useStatHistory';
 import { useStats } from './hooks/useStats';
-import { loadPreviousStatsSnapshot, saveStatsSnapshot } from './lib/statSnapshot';
 import type { Player } from './types';
 
 export default function App() {
@@ -14,9 +15,8 @@ export default function App() {
   const [category, setCategory] = useState('');
   const [stat, setStat] = useState('');
   const [selectedUuid, setSelectedUuid] = useState<string | null>(null);
-  const [previousSnapshot] = useState(loadPreviousStatsSnapshot);
-
   const hasData = !loading && !error && playerCount > 0;
+  const { history, previous } = useStatHistory(players, hasData);
   const noData = !loading && !error && playerCount === 0;
 
   // Pick sensible defaults once data arrives: custom category + play_time stat.
@@ -40,13 +40,6 @@ export default function App() {
     () => players.find(p => p.uuid === selectedUuid) ?? null,
     [players, selectedUuid],
   );
-
-  useEffect(() => {
-    if (!hasData) return;
-
-    const timeoutId = window.setTimeout(() => saveStatsSnapshot(players), 250);
-    return () => window.clearTimeout(timeoutId);
-  }, [hasData, players]);
 
   return (
     <main className="max-w-[1400px] mx-auto p-6">
@@ -77,8 +70,8 @@ export default function App() {
       )}
 
       {hasData && (
-        <>
-          <FeaturedBoards boards={featured} players={players} previousSnapshot={previousSnapshot} />
+        <HistoryPopoverProvider>
+          <FeaturedBoards boards={featured} players={players} history={history} previous={previous} />
           <Controls
             categories={categories}
             statsByCategory={statsByCategory}
@@ -92,14 +85,15 @@ export default function App() {
               players={players}
               category={category}
               stat={stat}
-              previousSnapshot={previousSnapshot}
+              history={history}
+              previous={previous}
             />
-            <PlayersList players={players} previousSnapshot={previousSnapshot} onSelect={setSelectedUuid} />
+            <PlayersList players={players} history={history} previous={previous} onSelect={setSelectedUuid} />
           </section>
           <div className="mt-4">
-            <PlayerDetail player={selectedPlayer} previousSnapshot={previousSnapshot} />
+            <PlayerDetail player={selectedPlayer} history={history} previous={previous} />
           </div>
-        </>
+        </HistoryPopoverProvider>
       )}
     </main>
   );

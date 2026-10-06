@@ -43,6 +43,12 @@ export function formatCustomStat(statId: string, value: number): string {
   return formatNumber(value);
 }
 
+/** Display a local YYYY-MM-DD key, e.g. "3 Oct 2026" (browser locale). */
+export function formatDateKey(key: string, options: Intl.DateTimeFormatOptions = { dateStyle: 'medium' }): string {
+  const [y, m, d] = key.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString(undefined, options);
+}
+
 export function formatSnapshotAge(savedAt: number): string {
   const elapsedSeconds = Math.max(0, Math.floor((Date.now() - savedAt) / 1000));
   if (elapsedSeconds < 60) return 'just now';

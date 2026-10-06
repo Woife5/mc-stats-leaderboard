@@ -1,20 +1,22 @@
 import { useMemo, useState } from 'react';
 import type { Player } from '../types';
-import type { PreviousStatsSnapshot } from '../lib/statSnapshot';
-import { formatCustomStat, formatSnapshotAge } from '../lib/format';
-import { buildIncrease } from '../lib/increase';
-import { getPreviousStat } from '../lib/statSnapshot';
+import { formatCustomStat } from '../lib/format';
+import { buildSeries, getPreviousStat, type DailySnapshot } from '../lib/history';
+import { buildIncrease, describeComparison } from '../lib/increase';
 import StatBubble from './StatBubble';
 
 interface PlayersListProps {
   players: Player[];
-  previousSnapshot: PreviousStatsSnapshot | null;
+  history: DailySnapshot[];
+  previous: DailySnapshot | null;
   onSelect: (uuid: string) => void;
 }
 
-export default function PlayersList({ players, previousSnapshot, onSelect }: PlayersListProps) {
+const formatPlayTime = (v: number) => formatCustomStat('minecraft:play_time', v);
+
+export default function PlayersList({ players, history, previous, onSelect }: PlayersListProps) {
   const [query, setQuery] = useState('');
-  const snapshotAge = previousSnapshot ? formatSnapshotAge(previousSnapshot.savedAt) : undefined;
+  const comparison = describeComparison(previous);
 
   const matches = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -22,6 +24,14 @@ export default function PlayersList({ players, previousSnapshot, onSelect }: Pla
       .filter(p => !q || p.name.toLowerCase().includes(q) || p.uuid.toLowerCase().includes(q))
       .sort((a, b) => b.topMetrics.play_time - a.topMetrics.play_time);
   }, [players, query]);
+
+  const seriesByUuid = useMemo(
+    () =>
+      new Map(
+        players.map(p => [p.uuid, buildSeries(history, p.uuid, s => s?.['minecraft:custom']?.['minecraft:play_time'])]),
+      ),
+    [players, history],
+  );
 
   return (
     <aside className="bg-panel/90 border border-border rounded-2xl p-4 backdrop-blur-md">
@@ -34,29 +44,37 @@ export default function PlayersList({ players, previousSnapshot, onSelect }: Pla
       />
       {matches.length ? (
         matches.map(p => {
-          const previousPlayTime = getPreviousStat(previousSnapshot, p.uuid, 'minecraft:custom', 'minecraft:play_time');
+          const previousPlayTime = getPreviousStat(previous, p.uuid, 'minecraft:custom', 'minecraft:play_time');
 
+          // A div rather than a button so the sparkline button inside stays valid HTML;
+          // the name button keeps the row reachable by keyboard.
           return (
-            <button
+            <div
               key={p.uuid}
-              type="button"
               onClick={() => onSelect(p.uuid)}
-              className="w-full text-left flex justify-between gap-3 cursor-pointer p-2.5 border-b border-border/55 hover:bg-accent/10 bg-transparent"
+              className="w-full text-left flex justify-between items-center gap-3 cursor-pointer p-2.5 border-b border-border/55 hover:bg-accent/10 bg-transparent"
             >
-              <span>{p.name}</span>
+              <button
+                type="button"
+                onClick={e => {
+                  e.stopPropagation();
+                  onSelect(p.uuid);
+                }}
+                className="cursor-pointer bg-transparent p-0 text-left text-inherit"
+              >
+                {p.name}
+              </button>
               <span className="flex gap-2 items-center whitespace-nowrap">
                 <StatBubble
-                  increase={buildIncrease(
-                    v => formatCustomStat('minecraft:play_time', v),
-                    p.topMetrics.play_time,
-                    previousPlayTime,
-                    snapshotAge,
-                  )}
+                  increase={buildIncrease(formatPlayTime, p.topMetrics.play_time, previousPlayTime, comparison)}
+                  series={seriesByUuid.get(p.uuid)}
+                  format={formatPlayTime}
+                  label={`${p.name} – play time`}
                 >
-                  {formatCustomStat('minecraft:play_time', p.topMetrics.play_time)}
+                  {formatPlayTime(p.topMetrics.play_time)}
                 </StatBubble>
               </span>
-            </button>
+            </div>
           );
         })
       ) : (

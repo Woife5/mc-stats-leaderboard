@@ -70,9 +70,11 @@ export interface PlayerDetail {
   categories: PlayerDetailCategory[];
 }
 
-/** Tooltip details for a stat that increased since the previous snapshot. */
+/** Tooltip details for a stat that increased since the previous day's snapshot. */
 export interface IncreaseDetails {
   previous: string;
   delta: string;
-  snapshotAge?: string;
+  /** Display date of the snapshot compared against. */
+  since: string;
+  snapshotAge: string;
 }
